@@ -1,0 +1,2457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>貓耳少女小雪</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Microsoft JhengHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 1920x1080 固定比例容器 */
+        #game-container {
+            position: absolute;
+            width: 1920px;
+            height: 1080px;
+            background-image: url('背景.jpg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            transition: background-image 0.8s ease;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        /* 遊戲主畫面（標題畫面）覆蓋層 */
+        #title-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('遊戲主畫面.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: 40;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding-right: 150px;
+        }
+        .title-menu-box {
+            background: rgba(255, 255, 255, 0.85);
+            border: 4px solid #ffb6c1;
+            border-radius: 30px;
+            padding: 40px 60px;
+            width: 550px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        .main-title {
+            font-size: 64px;
+            font-weight: bold;
+            color: #ff69b4;
+            text-shadow: 3px 3px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff;
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+        }
+
+        /* 頂部數據狀態欄 */
+        #status-bar {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            z-index: 10;
+        }
+        .status-item {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.93);
+            padding: 12px 18px;
+            border-radius: 20px;
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            border: 3px solid #ffb6c1;
+        }
+        .status-label {
+            font-size: 22px;
+            color: #d16b7c;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .status-bg {
+            width: 100%;
+            height: 14px;
+            background: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .status-fill {
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #ffb6c1, #ff69b4);
+            transition: width 0.3s ease;
+        }
+        .money-item {
+            background: linear-gradient(135deg, #fff7e6 0%, #fff 100%);
+            border: 3px solid #ffa500;
+            justify-content: center;
+            align-items: center;
+        }
+        .money-text {
+            font-size: 26px;
+            font-weight: bold;
+            color: #d2691e;
+        }
+
+        /* 小雪立繪區域 */
+        #character-area {
+            position: absolute;
+            bottom: 15%; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35%;
+            height: 70%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            cursor: pointer;
+            z-index: 5;
+            transition: opacity 0.5s ease;
+        }
+        #yuki-img {
+            height: 100%;
+            object-fit: contain;
+            transition: opacity 0.25s ease, transform 0.1s ease;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.4));
+        }
+
+        /* 對話氣泡 */
+        #bubble {
+            position: absolute;
+            bottom: 180px; 
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: rgba(255, 255, 255, 0.95);
+            border: 4px solid #ffb6c1;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 28px;
+            color: #4a4a4a;
+            font-weight: bold;
+            width: 65%;
+            max-width: 900px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            z-index: 6;
+            pointer-events: none;
+            line-height: 1.5;
+        }
+        /* 對話氣泡顯示時開放互動 */
+        #bubble.visible {
+            pointer-events: auto;
+        }
+        /* 對話氣泡隱藏按鈕 */
+        #bubble-hide-btn {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: rgba(255, 182, 193, 0.85);
+            border: 2px solid #ff69b4;
+            color: #d16b7c;
+            padding: 3px 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            line-height: 1.4;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        }
+        #bubble-hide-btn:active {
+            transform: scale(0.93);
+        }
+
+        /* 底部主控制按鈕 */
+        #action-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+        .btn {
+            background: linear-gradient(135deg, #ffffff 0%, #ffe4e1 100%);
+            border: 3px solid #ffb6c1;
+            padding: 15px 40px;
+            font-size: 26px;
+            font-weight: bold;
+            color: #d16b7c;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #fffff0 0%, #ffcccb 100%);
+            border: 3px solid #ff4d4d;
+            color: #cc0000;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffffff 0%, #e6e6e6 100%);
+            border: 3px solid #b5b5b5;
+            color: #555555;
+        }
+        .btn-large {
+            padding: 18px 45px;
+            font-size: 30px;
+            border-radius: 50px;
+            width: 100%;
+        }
+        .btn-sm {
+            padding: 5px 15px;
+            font-size: 18px;
+            border-radius: 15px;
+        }
+
+        /* 二級面板 */
+        .sub-panel {
+            position: absolute;
+            bottom: 120px; 
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: rgba(255, 255, 255, 0.98);
+            border: 3px solid #ffb6c1;
+            padding: 25px;
+            border-radius: 25px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            transition: transform 0.2s ease;
+            z-index: 11;
+            width: 85%;
+            max-width: 1100px;
+        }
+        .sub-panel.active {
+            transform: translateX(-50%) scale(1);
+        }
+        .shop-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 20px;
+            line-height: 1.4;
+            text-align: center;
+        }
+        .shop-btn .item-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .shop-btn .item-meta {
+            font-size: 18px;
+            opacity: 0.85;
+            margin-top: 6px;
+        }
+        .rarity-common { border-color: #b0c4de; color: #4682b4; }
+        .rarity-rare { border-color: #ba55d3; color: #8a2be2; background: #faf0e6; }
+        .rarity-epic { border-color: #ff8c00; color: #ff4500; background: #fff5ee; }
+
+        #play-panel, #difficulty-panel {
+            grid-template-columns: repeat(2, 1fr);
+            width: auto;
+        }
+        .btn-panel {
+            background: #fff;
+            border: 3px solid #ffa500;
+            color: #d2691e;
+        }
+
+        /* 彈出式面板 */
+        .popup-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-box {
+            background: rgba(255, 255, 255, 0.98);
+            border: 4px solid #ffb6c1;
+            border-radius: 25px;
+            padding: 30px 40px;
+            width: 55%; 
+            max-width: 850px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            max-height: 90%;
+            overflow-y: auto;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .popup-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: #4a4a4a;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            background: #fff0f2;
+            padding: 15px 20px;
+            border-radius: 15px;
+            border-left: 6px solid #ff69b4;
+        }
+        .choice-btn {
+            width: 100%;
+            background: #ffffff;
+            border: 2px solid #ffe4e1;
+            padding: 15px 25px;
+            margin: 10px 0;
+            border-radius: 15px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #555;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .choice-btn:hover {
+            background: #ffecf0;
+            border-color: #ff69b4;
+            color: #d16b7c;
+            transform: translateX(6px);
+        }
+
+        /* 設定面板控制項 */
+        .setting-item {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .setting-label {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d16b7c;
+        }
+        .volume-slider {
+            width: 100%;
+            height: 25px; 
+            cursor: pointer;
+        }
+        
+        /* 存檔槽樣式 */
+        .save-slots-container {
+            border: 2px dashed #ffb6c1;
+            border-radius: 15px;
+            padding: 15px;
+            background: #fffafb;
+            margin-top: 15px;
+        }
+        .save-slot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #fff;
+            border: 2px solid #ffe4e1;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        .save-slot:last-child {
+            margin-bottom: 0;
+        }
+        .slot-info {
+            font-size: 20px;
+            font-weight: bold;
+            color: #555;
+        }
+        .slot-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .setting-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* 小遊戲覆蓋層共通 */
+        .minigame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 253, 253, 0.98);
+            z-index: 20;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+        .game-header {
+            width: 85%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .game-title {
+            font-size: 28px;
+            color: #d16b7c;
+            font-weight: bold;
+        }
+        .game-timer-bar {
+            width: 250px;
+            height: 16px;
+            background: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .game-timer-fill {
+            width: 100%;
+            height: 100%;
+            background: #ff69b4;
+            transition: width 0.1s linear;
+        }
+
+        /* 抓光點區域 */
+        #cat-toy-zone {
+            width: 85%;
+            height: 60%;
+            max-width: 1100px;
+            background: #fffdfd;
+            border: 4px dashed #ffb6c1;
+            border-radius: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 4px 15px rgba(0,0,0,0.05);
+        }
+        #laser-dot {
+            width: 70px; 
+            height: 70px;
+            background: radial-gradient(circle, #ff3b6f 0%, rgba(255,59,111,0.2) 70%, transparent 100%);
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            transition: left 0.25s ease, top 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #laser-dot::after {
+            content: '';
+            width: 22px;
+            height: 22px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #fff;
+        }
+
+        /* 翻牌記憶格網 */
+        #memory-grid {
+            display: grid;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: linear-gradient(135deg, #ffb6c1 0%, #ffc0cb 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+        }
+        .card .card-front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotateY(180deg);
+            background: #ffffff;
+            border: 3px solid #ff69b4;
+            border-radius: 15px;
+        }
+        .card .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            animation: matchVanish 0.4s ease forwards;
+        }
+
+        /* 猜拳遊戲區域 */
+        .rps-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .rps-display {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            font-size: 32px;
+            font-weight: bold;
+            color: #4a4a4a;
+        }
+        .rps-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: #fff5f6;
+            border: 3px solid #ffb6c1;
+            padding: 20px;
+            border-radius: 20px;
+            width: 220px;
+        }
+        .rps-hand-large {
+            font-size: 80px;
+            height: 110px;
+        }
+        .rps-buttons {
+            display: flex;
+            gap: 20px;
+        }
+        .rps-btn {
+            font-size: 40px;
+            padding: 15px 30px;
+            border-radius: 20px;
+            border: 3px solid #ffb6c1;
+            background: #fff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .rps-btn:active { transform: scale(0.9); }
+
+        /* 五子棋遊戲區域 */
+        #gomoku-board {
+            display: grid;
+            grid-template-columns: repeat(11, 55px);
+            grid-template-rows: repeat(11, 55px);
+            background: #f1d599;
+            border: 5px solid #b37d34;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            margin-bottom: 20px;
+        }
+        .gomoku-cell {
+            border: 1px solid #c89e67;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gomoku-piece {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .gomoku-piece.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+        }
+        .gomoku-piece.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            border: 1px solid #aaa;
+        }
+
+        /* 休息全屏覆蓋層 */
+        #sleep-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 30;
+            transition: opacity 0.8s ease;
+        }
+        .sleep-text {
+            position: absolute;
+            bottom: 80px; 
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 50px;
+            border-radius: 40px;
+            letter-spacing: 3px;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        /* 結局大圖覆蓋層 */
+        #ending-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff;
+            background-size: cover;
+            background-position: center center;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            justify-content: flex-end; 
+            align-items: center;
+            padding: 30px 20px;
+            box-sizing: border-box;
+            animation: fadeIn 1.2s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .ending-box {
+            background: rgba(255, 255, 255, 0.96);
+            border: 4px solid #ff69b4;
+            border-radius: 25px;
+            padding: 25px 30px;
+            width: 90%; 
+            max-width: 550px; 
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            position: relative;
+            z-index: 10010;
+            box-sizing: border-box;
+        }
+        .ending-quote {
+            font-size: min(26px, 5.5vw);
+            font-weight: bold;
+            color: #ff1493;
+            margin-bottom: 12px;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+        .ending-sys {
+            font-size: min(18px, 4.2vw);
+            font-weight: bold;
+            color: #4a4a4a;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        .ending-btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* 隱藏按鈕 */
+        #btn-hide-ui {
+            position: absolute;
+            top: -50px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 3px solid #ff69b4;
+            color: #ff1493;
+            padding: 6px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            z-index: 10020;
+        }
+
+        /* 手機網頁環境下專門針對結局對話框的優化微調 */
+        @media (max-width: 768px) or (max-height: 600px) {
+            #ending-overlay {
+                background-position: center center;
+                padding: 15px 10px;
+            }
+            .ending-box {
+                padding: 15px 20px;
+                border-radius: 20px;
+                margin-bottom: 10px;
+            }
+            #btn-hide-ui {
+                top: 10px;
+                right: 10px;
+                padding: 4px 12px;
+                font-size: 13px;
+            }
+            .ending-quote { margin-top: 25px; }
+        }
+
+        /* 全螢幕點擊區 */
+        #ending-click-catcher {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            display: none;
+            cursor: pointer;
+        }
+
+        /* 飄字特效 */
+        .float-text {
+            position: absolute;
+            color: #ff69b4;
+            font-weight: bold;
+            font-size: 26px;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            z-index: 15;
+            text-shadow: 2px 2px 4px #fff;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-80px); opacity: 0; }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <div id="title-screen">
+        <div class="title-menu-box">
+            <h1 class="main-title">貓耳少女小雪</h1>
+            <button class="btn btn-large" onclick="pressStartGame()">開始遊戲</button>
+            <button class="btn btn-large" onclick="toggleSettings(true)">載入進度 / 設定</button>
+        </div>
+    </div>
+
+    <div id="status-bar">
+        <div class="status-item">
+            <span class="status-label">🍖 飽食度 <span id="val-fullness">80</span></span>
+            <div class="status-bg"><div id="bar-fullness" class="status-fill"></div></div>
+        </div>
+        <div class="status-item">
+            <span class="status-label">❤️ 心情 <span id="val-mood">50</span></span>
+            <div class="status-bg"><div id="bar-mood" class="status-fill"></div></div>
+        </div>
+        <div class="status-item">
+            <span class="status-label">⚡ 體力 <span id="val-energy">70</span></span>
+            <div class="status-bg"><div id="bar-energy" class="status-fill"></div></div>
+        </div>
+        <div class="status-item">
+            <span class="status-label">✨ 好感度 <span id="val-affection">20</span>/100</span>
+            <div class="status-bg"><div id="bar-affection" class="status-fill"></div></div>
+        </div>
+        <div class="status-item money-item">
+            <span class="status-label" style="color:#b8860b;">💰 擁有金錢</span>
+            <span id="val-money" class="money-text">$50</span>
+        </div>
+    </div>
+
+    <div id="character-area">
+        <img id="yuki-img" src="平常.png" alt="小雪" draggable="false">
+    </div>
+
+    <div id="bubble">
+        <button id="bubble-hide-btn" onclick="hideBubble()">✕ 關閉</button>
+        <span id="bubble-text">喵...？</span>
+    </div>
+
+    <div id="feed-panel" class="sub-panel">
+        <button class="btn shop-btn rarity-common" onclick="buyItem('meal')">
+            <span class="item-name">🥩 營養正餐 ($20)</span>
+            <span class="item-meta">【普及】飽食度+25 / 體力+5</span>
+        </button>
+        <button class="btn shop-btn rarity-common" onclick="buyItem('snack')">
+            <span class="item-name">🍰 手作點心 ($10)</span>
+            <span class="item-meta">【普及】心情+30 / 飽食度+8</span>
+        </button>
+        <button class="btn shop-btn rarity-rare" onclick="buyItem('catnip')">
+            <span class="item-name">🌿 高級貓薄荷 ($45)</span>
+            <span class="item-meta">【稀有】心情+55 / 體力+15</span>
+        </button>
+        <button class="btn shop-btn rarity-epic" onclick="buyItem('gift')">
+            <span class="item-name">🎁 輕奢亮麗髮飾 ($90)</span>
+            <span class="item-meta">【史詩】好感+15 / 狂暴生氣瞬解</span>
+        </button>
+    </div>
+
+    <div id="play-panel" class="sub-panel">
+        <button class="btn" onclick="showDifficulty('laser')">🔴 整理抓光點</button>
+        <button class="btn" onclick="showDifficulty('memory')">🃏 雜物卡牌分類</button>
+        <button class="btn" onclick="showDifficulty('rps')">✌️ 猜拳小遊戲</button>
+        <button class="btn" onclick="showDifficulty('gomoku')">⚫ 五子棋挑戰</button>
+    </div>
+
+    <div id="difficulty-panel" class="sub-panel">
+        <button class="btn btn-panel" onclick="startGame('easy')">溫和輕鬆 (簡單)</button>
+        <button class="btn btn-panel" onclick="startGame('hard')">極速地獄 (困難)</button>
+    </div>
+
+    <div id="choice-overlay" class="popup-overlay">
+        <div class="popup-box">
+            <div id="choice-question" class="popup-title">小雪看著你...</div>
+            <button class="choice-btn" id="opt-a" onclick="makeChoice(1)">選項A</button>
+            <button class="choice-btn" id="opt-b" onclick="makeChoice(2)">選項B</button>
+            <button class="choice-btn" id="opt-c" onclick="makeChoice(3)">選項C</button>
+        </div>
+    </div>
+
+    <div id="settings-overlay" class="popup-overlay">
+        <div class="popup-box">
+            <div class="popup-title">⚙️ 遊戲設定</div>
+            
+            <div class="setting-item" style="margin-bottom: 15px;">
+                <button class="btn" style="width: 100%; background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%); border-color: #91d5ff; color: #0050b3;" onclick="toggleFullScreen()">🖥️ 切換全螢幕模式</button>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label" for="player-name-input">🏷️ 玩家自定義稱呼（小雪對主人的稱呼）</label>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <input type="text" id="player-name-input" maxlength="10" placeholder="預設：主人"
+                        style="flex:1; font-size:22px; padding:10px 16px; border:3px solid #ffb6c1; border-radius:15px; font-family:inherit; outline:none; color:#4a4a4a;">
+                    <button class="btn btn-sm" onclick="savePlayerName()" style="white-space:nowrap;">確認設定</button>
+                </div>
+                <div style="font-size:17px; color:#aaa; margin-top:4px;">目前稱呼：<span id="current-player-name-display" style="color:#ff69b4; font-weight:bold;">主人</span></div>
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label" for="bgm-volume">🎵 背景音樂音量</label>
+                <input type="range" id="bgm-volume" class="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeVolume('bgm', this.value)">
+            </div>
+            <div class="setting-item">
+                <label class="setting-label" for="sfx-volume">🔊 點擊音效音量</label>
+                <input type="range" id="sfx-volume" class="volume-slider" min="0" max="1" step="0.05" value="0.5" oninput="changeVolume('sfx', this.value)">
+            </div>
+
+            <div class="setting-item">
+                <label class="setting-label">💾 手動存讀檔系統</label>
+                <div class="save-slots-container">
+                    <div class="save-slot">
+                        <span class="slot-info" id="slot-info-1">進度一：無存檔</span>
+                        <div class="slot-actions">
+                            <button class="btn btn-sm" onclick="manualSave(1)">儲存</button>
+                            <button class="btn btn-sm" style="color:#007bff; border-color:#007bff;" onclick="manualLoad(1)">載入</button>
+                            <button class="btn btn-sm btn-danger" onclick="manualDelete(1)">刪除</button>
+                        </div>
+                    </div>
+                    <div class="save-slot">
+                        <span class="slot-info" id="slot-info-2">進度二：無存檔</span>
+                        <div class="slot-actions">
+                            <button class="btn btn-sm" onclick="manualSave(2)">儲存</button>
+                            <button class="btn btn-sm" style="color:#007bff; border-color:#007bff;" onclick="manualLoad(2)">載入</button>
+                            <button class="btn btn-sm btn-danger" onclick="manualDelete(2)">刪除</button>
+                        </div>
+                    </div>
+                    <div class="save-slot">
+                        <span class="slot-info" id="slot-info-3">進度三：無存檔</span>
+                        <div class="slot-actions">
+                            <button class="btn btn-sm" onclick="manualSave(3)">儲存</button>
+                            <button class="btn btn-sm" style="color:#007bff; border-color:#007bff;" onclick="manualLoad(3)">載入</button>
+                            <button class="btn btn-sm btn-danger" onclick="manualDelete(3)">刪除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-actions">
+                <button class="btn btn-danger" onclick="resetGameData()">⚠️ 重置遊戲</button>
+                <button class="btn" style="background: linear-gradient(135deg, #fff2e8 0%, #ffbb96 100%); border-color: #ff9c6e; color: #d4380d;" onclick="returnToTitle()">🏠 返回主畫面</button>
+                <button class="btn" onclick="toggleSettings(false)">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="action-bar">
+        <button class="btn" onclick="togglePanel('feed-panel')">商店</button>
+        <button class="btn" onclick="togglePanel('play-panel')">小遊戲</button>
+        <button class="btn" id="btn-sleep" onclick="sleep()">睡覺</button>
+        <button class="btn btn-danger" id="btn-apologize" style="display:none;" onclick="apologize()">跪求原諒 (道歉)</button>
+        <button class="btn btn-secondary" onclick="toggleSettings(true)">遊戲設定</button>
+    </div>
+
+    <div id="game-laser" class="minigame-overlay">
+        <div class="game-header">
+            <div class="game-title">抓光點：點擊閃爍的紅點！(<span id="laser-count">0</span>/<span id="laser-max">5</span>)</div>
+            <div class="game-timer-bar"><div id="laser-timer-fill" class="game-timer-fill"></div></div>
+        </div>
+        <div id="cat-toy-zone">
+            <div id="laser-dot" onclick="hitLaser(event)"></div>
+        </div>
+        <button class="btn" style="margin-top:20px;" onclick="closeGame()">放棄退出</button>
+    </div>
+
+    <div id="game-memory" class="minigame-overlay">
+        <div class="game-header">
+            <div class="game-title" id="memory-title">卡牌分類：請先記住所有卡牌位置！</div>
+            <div style="font-size:20px; color:#4a4a4a; font-weight:bold;">
+                ⏳ 剩餘時間: <span id="memo-time-txt">0</span>秒 | 📦 剩餘翻閱次數: <span id="memo-turns-txt">0</span>次
+            </div>
+            <div class="game-timer-bar"><div id="memory-timer-fill" class="game-timer-fill"></div></div>
+        </div>
+        <div id="memory-grid"></div>
+        <button class="btn" onclick="closeGame()">放棄退出</button>
+    </div>
+
+    <div id="game-rps" class="minigame-overlay">
+        <div class="game-header">
+            <div class="game-title" id="rps-title">猜拳對決：先贏得指定勝場吧！</div>
+            <div style="font-size:20px; color:#4a4a4a; font-weight:bold;" id="rps-score-label">得分: 主人 <span id="rps-score-p">0</span> / 小雪 <span id="rps-score-y">0</span> (目標: <span id="rps-target">2</span>)</div>
+            <div class="game-timer-bar"><div id="rps-timer-fill" class="game-timer-fill"></div></div>
+        </div>
+        <div class="rps-container">
+            <div class="rps-display">
+                <div class="rps-side">
+                    <div id="rps-player-label">主人</div>
+                    <div id="rps-hand-p" class="rps-hand-large">❓</div>
+                </div>
+                <div style="font-size: 50px; align-self: center;" id="rps-result-text">VS</div>
+                <div class="rps-side">
+                    <div>小雪</div>
+                    <div id="rps-hand-y" class="rps-hand-large">❓</div>
+                </div>
+            </div>
+            <div class="rps-buttons" id="rps-controls">
+                <button class="rps-btn" onclick="playRPS('✊')">✊</button>
+                <button class="rps-btn" onclick="playRPS('✌️')">✌️</button>
+                <button class="rps-btn" onclick="playRPS('✋')">✋</button>
+            </div>
+        </div>
+        <button class="btn" style="margin-top:40px;" onclick="closeGame()">放棄退出</button>
+    </div>
+
+    <div id="game-gomoku" class="minigame-overlay">
+        <div class="game-header">
+            <div class="game-title" id="gomoku-title">五子棋：執黑先行，達成五子連線！</div>
+            <div style="font-size:22px; color:#ff69b4; font-weight:bold;" id="gomoku-turn-text">你的回合</div>
+        </div>
+        <div id="gomoku-board"></div>
+        <button class="btn" onclick="closeGame()">放棄退出</button>
+    </div>
+
+    <div id="sleep-overlay">
+        <div class="sleep-text">小雪安靜熟睡中... Zzz</div>
+    </div>
+</div>
+
+<div id="ending-overlay">
+    <div id="ending-click-catcher" onclick="showEndingUI()"></div>
+    
+    <div class="ending-box" id="ending-dialog-box">
+        <button id="btn-hide-ui" onclick="hideEndingUI(event)">👁️ 隱藏對話</button>
+        <div class="ending-quote" id="ending-text-quote">「今後也要一直和小雪在一起哦~ ❤」</div>
+        <div class="ending-sys" id="ending-text-sys">🎉 恭喜通關此遊戲！現在可以一直摸小雪啦~</div>
+        <div class="ending-btn-group" id="ending-buttons">
+            <button class="btn" onclick="closeEnding()">進入無限溺愛模式 ✨</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 玩家自定義稱呼（預設為「主人」）
+    let playerName = '主人';
+
+    // 取得稱呼的輔助函式
+    function N() { return playerName; }
+
+    // 預設核心數據
+    const defaultStatus = {
+        fullness: 80,
+        mood: 50,
+        energy: 70,
+        affection: 20,
+        money: 50,
+        isGameCleared: false
+    };
+
+    let status = { ...defaultStatus };
+
+    // 音量設定
+    let audioSettings = {
+        bgmVolume: 0.5,
+        sfxVolume: 0.5
+    };
+
+    const bgmAudio = new Audio('背景音樂.mp3');
+    bgmAudio.loop = true;
+    
+    function playSfx() {
+        const sfxAudio = new Audio('點擊.mp3');
+        sfxAudio.volume = audioSettings.sfxVolume;
+        sfxAudio.play().catch(e => console.log("音效播放受阻:", e));
+    }
+
+    function tryPlayBGM() {
+        if (bgmAudio.paused) {
+            bgmAudio.volume = audioSettings.bgmVolume;
+            bgmAudio.play().catch(e => console.log("BGM 播放受阻，等待使用者互動"));
+        }
+    }
+
+    let currentScale = 1;
+
+    // 1920x1080 自適應等比例縮放
+    function resizeGame() {
+        const container = document.getElementById('game-container');
+        const targetWidth = 1920;
+        const targetHeight = 1080;
+        
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        const scaleX = windowWidth / targetWidth;
+        const scaleY = windowHeight / targetHeight;
+        
+        currentScale = Math.min(scaleX, scaleY);
+        
+        container.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
+        container.style.position = 'absolute';
+        container.style.top = '50%';
+        container.style.left = '50%';
+        container.style.transformOrigin = 'center center';
+    }
+    
+    window.addEventListener('resize', resizeGame);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(resizeGame, 200);
+    });
+
+    document.addEventListener('click', (e) => {
+        playSfx();
+        tryPlayBGM();
+    });
+    document.addEventListener('touchstart', (e) => {
+        tryPlayBGM();
+    }, { passive: true });
+
+    function pressStartGame() {
+        playSfx();
+        tryPlayBGM();
+        document.getElementById('title-screen').style.display = 'none';
+        showBubble('歡迎回來，' + N() + '！今天小雪也有乖乖把屋子收拾好哦～');
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`無法啟用全螢幕模式: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    function returnToTitle() {
+        toggleSettings(false);
+        closeAllPanels();
+        closeGame();
+        document.getElementById('ending-overlay').style.display = 'none';
+        document.getElementById('title-screen').style.display = 'flex';
+    }
+
+    // 存檔與讀檔系統
+    function saveGameData() {
+        localStorage.setItem('yuki_game_status', JSON.stringify(status));
+        localStorage.setItem('yuki_game_audio', JSON.stringify(audioSettings));
+        localStorage.setItem('yuki_player_name', playerName);
+    }
+
+    function loadGameData() {
+        const savedStatus = localStorage.getItem('yuki_game_status');
+        if (savedStatus) {
+            status = JSON.parse(savedStatus);
+            isGameCleared = status.isGameCleared || false;
+        }
+        
+        const savedAudio = localStorage.getItem('yuki_game_audio');
+        if (savedAudio) {
+            audioSettings = JSON.parse(savedAudio);
+        }
+
+        const savedName = localStorage.getItem('yuki_player_name');
+        if (savedName) {
+            playerName = savedName;
+        }
+        
+        document.getElementById('bgm-volume').value = audioSettings.bgmVolume;
+        document.getElementById('sfx-volume').value = audioSettings.sfxVolume;
+        bgmAudio.volume = audioSettings.bgmVolume;
+        document.getElementById('player-name-input').value = playerName !== '主人' ? playerName : '';
+        document.getElementById('current-player-name-display').innerText = playerName;
+
+        updateSaveSlotsUI();
+    }
+
+    function savePlayerName() {
+        const input = document.getElementById('player-name-input').value.trim();
+        playerName = input.length > 0 ? input : '主人';
+        document.getElementById('current-player-name-display').innerText = playerName;
+        localStorage.setItem('yuki_player_name', playerName);
+        showBubble('小雪會記住的！以後就叫你「' + playerName + '」囉～喵喵！');
+        toggleSettings(false);
+    }
+
+    function manualSave(slot) {
+        const timeString = new Date().toLocaleString();
+        const saveData = {
+            status: status,
+            time: timeString
+        };
+        localStorage.setItem(`yuki_manual_slot_${slot}`, JSON.stringify(saveData));
+        updateSaveSlotsUI();
+        alert(`進度 ${slot} 已成功儲存！ (${timeString})`);
+    }
+
+    function manualLoad(slot) {
+        const dataStr = localStorage.getItem(`yuki_manual_slot_${slot}`);
+        if (!dataStr) {
+            alert(`進度 ${slot} 沒有任何存檔資料！`);
+            return;
+        }
+        if (confirm(`確定要載入進度 ${slot} 嗎？目前未儲存的進度將會遺失。`)) {
+            const saveData = JSON.parse(dataStr);
+            status = { ...saveData.status };
+            isGameCleared = status.isGameCleared || false;
+            
+            isAngryLocked = false;
+            isEatingLocked = false;
+            isSleeping = false;
+            isBadEndingTriggered = false;
+            clearTimeout(angryTimer);
+
+            updateUI();
+            toggleSettings(false);
+            closeAllPanels();
+            
+            document.getElementById('title-screen').style.display = 'none';
+            
+            // 判斷存檔是否有觸發特殊結局
+            checkAndTriggerBadEndings();
+            if (!isBadEndingTriggered) {
+                if (isGameCleared) {
+                    triggerGoodEndingUI();
+                } else {
+                    document.getElementById('ending-overlay').style.display = 'none';
+                }
+            }
+            
+            showBubble(`已成功載入手動進度 ${slot}！`);
+        }
+    }
+
+    function manualDelete(slot) {
+        const dataStr = localStorage.getItem(`yuki_manual_slot_${slot}`);
+        if (!dataStr) {
+            alert(`進度 ${slot} 本來就是空的。`);
+            return;
+        }
+        if (confirm(`⚠️ 確定要刪除進度 ${slot} 的存檔嗎？此動作無法復原。`)) {
+            localStorage.removeItem(`yuki_manual_slot_${slot}`);
+            updateSaveSlotsUI();
+            alert(`進度 ${slot} 的存檔已成功刪除。`);
+        }
+    }
+
+    function updateSaveSlotsUI() {
+        for (let slot = 1; slot <= 3; slot++) {
+            const currentSlotEl = document.getElementById(`slot-info-${slot}`);
+            if (currentSlotEl) {
+                const dataStr = localStorage.getItem(`yuki_manual_slot_${slot}`);
+                if (dataStr) {
+                    const saveData = JSON.parse(dataStr);
+                    currentSlotEl.innerText = `進度 ${slot}：${saveData.time}`;
+                } else {
+                    currentSlotEl.innerText = `進度 ${slot}：無存檔`;
+                }
+            }
+        }
+    }
+
+    function resetGameData() {
+        if(confirm("確定要重置所有遊戲數據嗎？您的自動存檔將會消失。（手動存檔槽不會受影響）")) {
+            status = { ...defaultStatus };
+            isGameCleared = false;
+            isAngryLocked = false;
+            isBadEndingTriggered = false;
+            clearTimeout(angryTimer);
+            saveGameData();
+            updateUI();
+            toggleSettings(false);
+            closeAllPanels();
+            document.getElementById('ending-overlay').style.display = 'none';
+            document.getElementById('title-screen').style.display = 'flex'; 
+            showBubble("遊戲數據已成功重置！");
+        }
+    }
+
+    function changeVolume(type, val) {
+        const numVal = parseFloat(val);
+        if (type === 'bgm') {
+            audioSettings.bgmVolume = numVal;
+            bgmAudio.volume = numVal;
+        } else if (type === 'sfx') {
+            audioSettings.sfxVolume = numVal;
+        }
+        saveGameData();
+    }
+
+    function toggleSettings(show) {
+        document.getElementById('settings-overlay').style.display = show ? 'flex' : 'none';
+        const endingOverlay = document.getElementById('ending-overlay');
+        if(show) {
+            closeAllPanels();
+            updateSaveSlotsUI();
+            if (endingOverlay && endingOverlay.style.display === 'flex') {
+                endingOverlay.dataset.wasVisible = 'true';
+                endingOverlay.style.display = 'none';
+            }
+        } else {
+            if (endingOverlay && endingOverlay.dataset.wasVisible === 'true') {
+                endingOverlay.style.display = 'flex';
+                endingOverlay.dataset.wasVisible = 'false';
+            }
+        }
+    }
+
+    // 對話池（使用 N() 動態取得稱呼）
+    const quotes = {
+        normal: [
+            () => N() + '工作辛苦了，小雪幫你倒杯熱水吧？', 
+            () => '有' + N() + '陪在身邊，這個家感覺好溫暖呀。', 
+            () => N() + '桌上的資料要收好哦，小雪不會去弄亂的，放心吧～', 
+            () => '呼啊... 只要靜靜待在' + N() + '旁邊，心裡就很踏實呢。',
+            () => '衣服已經幫' + N() + '摺好放在床頭囉，嘿嘿，我很厲害吧？',
+            () => '如果累了就閉上眼休息一下，小雪會一直在這裡守護你的。'
+        ],
+        happy: [
+            () => '能成為' + N() + '的家人，小雪真的覺得好幸福呢！🎵', 
+            () => '只要看見' + N() + '的笑容，小雪的疲勞就全部飛走啦～', 
+            () => '最喜歡溫柔的' + N() + '了！今天也要開開心心的哦！',
+            () => '今天的天氣真好，晚點我們一起把窗簾拉開曬曬太陽吧！',
+            () => '能幫上' + N() + '的忙，是小雪每天最開心的事了。'
+        ],
+        angry: [
+            () => '（狠狠轉過頭）哼！小雪非常生氣喵！💢', 
+            () => '大壞蛋' + N() + '！明明很痛還一直亂摸……小雪現在極度憤怒，絕不吃東西也不去睡覺，哼！',
+            () => '唔……走開啊！小雪頭好痛、心情好差，小雪現在在氣頭上，完全不想理會' + N() + '了！'
+        ],
+        sad: [
+            () => '（失落，尾巴垂了下來）' + N() + '最近是不是太忙了呢……小雪會乖乖不打擾你的。', 
+            () => '（委屈，和著下唇）如果小雪有做不好的地方，' + N() + '一定要告訴我哦，別突然不理我……',
+            () => N() + '是不是討厭小雪了呢？看著你一直嘆氣卻不對我說話，小雪的心裡酸酸的……',
+            () => '（縮在角落攪手指）明明就在同一個房間裡，為什麼' + N() + '一句話都不想跟小雪說呢……',
+            () => '小雪今天有乖乖摺衣服哦……' + N() + '能不能看我一眼？就一眼也好……',
+            () => '（眼框紅紅的）原來，小雪在' + N() + '眼裡……只是可有可無的嗎……？'
+        ],
+        tired: [
+            () => '唔……眼皮好沉哦……小雪好累，沒有精神了……需要好好睡一覺恢復體力……💤', 
+            () => '（搖搖晃晃）' + N() + '，小雪的體力真的見底了……已經動不了啊，快讓我睡覺吧……',
+            () => '（打哈欠）好累呀……體力太低了，不准碰小雪了啊……'
+        ],
+        hungry: [
+            () => '（肚子咕嚕嚕……）' + N() + '……小雪肚子有點空空的，沒力氣幫你揉肩了……', 
+            () => '小雪肚子餓了……' + N() + '，能不能買東西給小雪吃呢？？🥺', 
+            () => '餓得有些發暈了……不過小雪會乖乖等' + N() + '忙完的。'
+        ],
+        starving: [
+            () => '（虛弱地看著牆）' + N() + '……小雪肚子好餓……身體完全使不上力氣了……喵唔……🥺',
+            () => '（暈乎乎地搖晃）好累……好餓……小雪想幫' + N() + '做家事，可是眼睛好花……沒力氣動了……'
+        ],
+        maxAffection: [
+            () => '嘿嘿，最喜歡被' + N() + '摸摸了～好溫暖哦( *´▽`*)',
+            () => N() + '的手好溫柔，小雪想永遠和' + N() + '在一起～',
+            () => '喵唔～被' + N() + '這樣摸著，感覺整個人都要幸福得融化了呢❤',
+            () => '不論發生什麼事，小雪這輩子都會一直守護在' + N() + '身邊的！',
+            () => '有' + N() + '在的地方就是家，以後也要天天幫' + N() + '摺衣服、做便當～',
+            () => '不管' + N() + '怎麼摸、摸多久，小雪永遠都不會再生' + N() + '的氣囉～'
+        ]
+    };
+
+    let strokeCount = 0;
+    let strokeTimer = null; 
+    let lastStrokeTime = 0;
+    
+    let isSleeping = false;
+    let isAngryLocked = false;   
+    let isEatingLocked = false;  
+    let isGameCleared = false;   
+    let isBadEndingTriggered = false; // 特殊壞結局狀態鎖
+    let angryTimer = null;
+    let lastInteractTime = Date.now(); 
+    let lastEventTime = 0;       
+
+    let currentGameType = ''; 
+    let currentGameDifficulty = 'easy';
+    let isInMinigame = false; // 小遊戲進行中旗標
+    let laserHits = 0;
+    let maxLaserHits = 5;
+    let laserInterval = null;
+    let gameTimerInterval = null;
+    let gameTimeLeft = 100;
+
+    let flippedCards = [];
+    let matchedPairs = 0;
+    let requiredPairs = 4;
+    let isProcessingCards = false; 
+    let memoTurnsLeft = 0;
+    let memoTimeLeft = 100;
+    let memoMaxTime = 30;
+    const poolIcons = ['🐟', '🧶', '🔔', '🐾', '👑', '🍼', '🐤', '🎒'];
+
+    let rpsScoreP = 0;
+    let rpsScoreY = 0;
+    let rpsTarget = 2;
+    let rpsTimer = null;
+
+    let gomokuBoard = [];
+    const boardSize = 11;
+    let gomokuActive = false;
+
+    // 飽食度常駐計時累加器
+    let fullnessTickCounter = 0;
+    // 冷落扣心情計時累加器（每60秒扣25）
+    let neglectTickCounter = 0;
+
+    const gameContainer = document.getElementById('game-container');
+    const yukiImg = document.getElementById('yuki-img');
+    const characterArea = document.getElementById('character-area');
+    const actionBar = document.getElementById('action-bar');
+    const bubble = document.getElementById('bubble');
+
+    function isStatusTooLow() {
+        return status.energy <= 15 || status.fullness <= 15;
+    }
+
+    // 壞結局核心檢查器
+    function checkAndTriggerBadEndings() {
+        if (isGameCleared || isBadEndingTriggered) return;
+
+        // 1. 生病結局：當體力或飽食度降至 0 時觸發
+        if (status.energy <= 0 || status.fullness <= 0) {
+            isBadEndingTriggered = true;
+            closeAllPanels();
+            closeGame();
+            
+            const overlay = document.getElementById('ending-overlay');
+            overlay.style.backgroundImage = "url('生病結局.jpg')";
+            overlay.style.display = 'flex';
+            
+            document.getElementById('ending-text-quote').innerText = "「" + N() + "……小雪好難受喵……」";
+            document.getElementById('ending-text-sys').innerText = "❌ 由於體力或飽食度太低，小雪生病了……。";
+            
+            // 建立壞結局專用按鈕組
+            document.getElementById('ending-buttons').innerHTML = `
+                <button class="btn" style="background: linear-gradient(135deg, #fff2e8 0%, #ffbb96 100%); border-color: #ff9c6e; color: #d4380d;" onclick="returnToTitle()">🏠 返回主畫面</button>
+                <button class="btn" style="background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%); border-color: #91d5ff; color: #0050b3;" onclick="toggleSettings(true)">💾 載入存檔</button>
+            `;
+            showEndingUI();
+            return true;
+        }
+
+        // 2. 離家出走結局：當心情值降至 0 時觸發
+        if (status.mood <= 0) {
+            isBadEndingTriggered = true;
+            closeAllPanels();
+            closeGame();
+            
+            const overlay = document.getElementById('ending-overlay');
+            overlay.style.backgroundImage = "url('離家出走結局.jpg')";
+            overlay.style.display = 'flex';
+            
+            document.getElementById('ending-text-quote').innerText = "「小雪不會再打擾" + N() + "了……」";
+            document.getElementById('ending-text-sys').innerText = "❌ 小雪離家出走了……。";
+            
+            document.getElementById('ending-buttons').innerHTML = `
+                <button class="btn" style="background: linear-gradient(135deg, #fff2e8 0%, #ffbb96 100%); border-color: #ff9c6e; color: #d4380d;" onclick="returnToTitle()">🏠 返回主畫面</button>
+                <button class="btn" style="background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%); border-color: #91d5ff; color: #0050b3;" onclick="toggleSettings(true)">💾 載入存檔</button>
+            `;
+            showEndingUI();
+            return true;
+        }
+        return false;
+    }
+
+    function triggerGoodEndingUI() {
+        const overlay = document.getElementById('ending-overlay');
+        overlay.style.backgroundImage = "url('結局.jpg')";
+        overlay.style.display = 'flex';
+        document.getElementById('ending-text-quote').innerText = "「今後也要一直和小雪在一起哦~ ❤」";
+        document.getElementById('ending-text-sys').innerText = "🎉 恭喜通關此遊戲！現在可以一直摸小雪啦~";
+        document.getElementById('ending-buttons').innerHTML = `
+            <button class="btn" onclick="closeEnding()">進入無限溺愛模式 ✨</button>
+        `;
+        showEndingUI();
+    }
+
+    function updateUI() {
+        // 先做壞結局檢查，若觸發則直接跳出不執行常規UI限幅
+        if (checkAndTriggerBadEndings()) return;
+
+        for(let key in status) {
+            if(key !== 'money' && key !== 'isGameCleared') {
+                status[key] = Math.max(0, Math.min(100, Math.round(status[key])));
+            } else if(key === 'money') {
+                status[key] = Math.max(0, status[key]);
+            }
+        }
+
+        document.getElementById('val-fullness').innerText = status.fullness;
+        document.getElementById('val-mood').innerText = status.mood;
+        document.getElementById('val-energy').innerText = status.energy;
+        document.getElementById('val-affection').innerText = status.affection;
+        document.getElementById('val-money').innerText = '$' + status.money;
+
+        document.getElementById('bar-fullness').style.width = status.fullness + '%';
+        document.getElementById('bar-mood').style.width = status.mood + '%';
+        document.getElementById('bar-energy').style.width = status.energy + '%';
+        document.getElementById('bar-affection').style.width = status.affection + '%';
+
+        const apologizeBtn = document.getElementById('btn-apologize');
+        if (isAngryLocked) {
+            apologizeBtn.style.display = 'inline-block';
+        } else {
+            apologizeBtn.style.display = 'none';
+        }
+
+        if (isSleeping) return;
+
+        let currentExpression = '平常';
+        const now = Date.now();
+
+        if (isAngryLocked) {
+            currentExpression = '生氣';
+        } else if (isEatingLocked) {
+            currentExpression = '開心';
+        } else if (isStatusTooLow()) {
+            currentExpression = '疲累';
+        } else if (now - lastInteractTime > 35000 && !isGameCleared) {
+            currentExpression = '傷心'; 
+        } else if (status.mood >= 85 || isGameCleared) {
+            currentExpression = '開心';
+        } else {
+            currentExpression = '平常';
+        }
+
+        const targetSrc = currentExpression + '.png';
+        if(!yukiImg.src.includes(encodeURIComponent(targetSrc))) {
+            yukiImg.style.opacity = '0.3';
+            setTimeout(() => {
+                yukiImg.src = targetSrc;
+                yukiImg.style.opacity = '1';
+            }, 150);
+        }
+        
+        saveGameData();
+    }
+
+    function showBubble(text) {
+        if (isSleeping || isBadEndingTriggered) return;
+        document.getElementById('bubble-text').innerText = text;
+        bubble.classList.add('visible');
+        bubble.style.transform = 'translateX(-50%) scale(1)';
+        clearTimeout(window.bubbleTimer);
+        window.bubbleTimer = setTimeout(() => {
+            bubble.style.transform = 'translateX(-50%) scale(0)';
+            bubble.classList.remove('visible');
+        }, 4500);
+    }
+
+    function hideBubble() {
+        clearTimeout(window.bubbleTimer);
+        bubble.style.transform = 'translateX(-50%) scale(0)';
+        bubble.classList.remove('visible');
+    }
+
+    function createFloatText(text, x, y, color = '#ff69b4') {
+        const span = document.createElement('span');
+        span.className = 'float-text';
+        span.innerText = text;
+        span.style.color = color;
+        
+        const rect = gameContainer.getBoundingClientRect();
+        span.style.left = ((x - rect.left) / currentScale) + 'px';
+        span.style.top = ((y - rect.top) / currentScale) + 'px';
+        
+        gameContainer.appendChild(span);
+        setTimeout(() => span.remove(), 800);
+    }
+
+    function togglePanel(panelId) {
+        if (isBadEndingTriggered) return;
+        const panels = ['feed-panel', 'play-panel', 'difficulty-panel'];
+        panels.forEach(id => {
+            if(id !== panelId) document.getElementById(id).classList.remove('active');
+        });
+        document.getElementById(panelId).classList.toggle('active');
+    }
+
+    function hideEndingUI(event) {
+        if(event) event.stopPropagation(); 
+        const dialogBox = document.getElementById('ending-dialog-box');
+        const catcher = document.getElementById('ending-click-catcher');
+        
+        dialogBox.style.opacity = '0';
+        dialogBox.style.transform = 'scale(0.95)';
+        dialogBox.style.pointerEvents = 'none';
+        
+        catcher.style.display = 'block';
+        catcher.style.zIndex = '10005'; 
+    }
+
+    function showEndingUI() {
+        const dialogBox = document.getElementById('ending-dialog-box');
+        const catcher = document.getElementById('ending-click-catcher');
+        
+        dialogBox.style.opacity = '1';
+        dialogBox.style.transform = 'scale(1)';
+        dialogBox.style.pointerEvents = 'auto';
+        
+        catcher.style.display = 'none';
+        catcher.style.zIndex = '10000';
+    }
+
+    function closeAllPanels() {
+        document.getElementById('feed-panel').classList.remove('active');
+        document.getElementById('play-panel').classList.remove('active');
+        document.getElementById('difficulty-panel').classList.remove('active');
+    }
+
+    function refreshInteract() {
+        lastInteractTime = Date.now();
+    }
+
+    function handleStroke(e) {
+        if (isSleeping || isBadEndingTriggered) return;
+        e.preventDefault();
+
+        const now = Date.now();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX) || (e.changedTouches && e.changedTouches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY) || (e.changedTouches && e.changedTouches[0].clientY);
+
+        if (now - lastStrokeTime < 150) return; 
+        lastStrokeTime = now;
+
+        if (isStatusTooLow() && !isGameCleared) {
+            createFloatText('⚠️ 狀態太低', clientX, clientY, '#ffa500');
+            if (status.energy <= 15) {
+                showBubble(quotes.tired[Math.floor(Math.random() * quotes.tired.length)]() + "【提示：體力太低，不能進行互動！請點擊『睡覺』按鈕恢復體力！】");
+            } else {
+                showBubble(quotes.starving[Math.floor(Math.random() * quotes.starving.length)]() + "【提示：飽食度太低，不能進行互動！請先去商店購買食物或點擊『睡覺』恢復！】");
+            }
+            return;
+        }
+
+        if(!isGameCleared) {
+            status.energy -= 1;
+            status.fullness -= 1;
+        }
+
+        if (isGameCleared) {
+            status.mood += 5;
+            updateUI();
+            yukiImg.style.transform = 'scale(1.06)';
+            setTimeout(() => yukiImg.style.transform = 'scale(1)', 100);
+            createFloatText('💖 永遠寵愛', clientX, clientY, '#ff1493');
+            showBubble(quotes.maxAffection[Math.floor(Math.random() * quotes.maxAffection.length)]());
+            refreshInteract();
+            return;
+        }
+
+        if (isAngryLocked) {
+            createFloatText('⚠️ 拒絕理會中...', clientX, clientY, '#ff0000');
+            showBubble("好疼……太粗魯了啦！小雪生氣了喵！三分鐘內不想理你！請用【商店買髮飾送禮】或底部【跪求原諒】來跟我道歉！");
+            refreshInteract();
+            updateUI();
+            return;
+        }
+
+        // 冷落後的首次安撫（不計入連點惹怒）
+        if (now - lastInteractTime > 35000) {
+            status.mood += 15;
+            status.affection += 2;
+            createFloatText('❤️ 給予安慰', clientX, clientY, '#ff69b4');
+            showBubble("（嚇了一跳，隨後撲進你懷裡）嗚哇……！我還以為" + N() + "不要小雪了……對不起，小雪會乖乖的，不要不理我……");
+            refreshInteract();
+            updateUI();
+            return;
+        }
+
+        refreshInteract();
+
+        if (status.affection >= 80 && (now - lastEventTime > 30000)) {
+            triggerAffectionEvent();
+            return;
+        }
+
+        if (strokeTimer) clearTimeout(strokeTimer);
+        strokeCount++;
+        strokeTimer = setTimeout(() => { strokeCount = 0; }, 1500);
+
+        if (strokeCount >= 5) {
+            isAngryLocked = true;
+            // 修改：惹小雪生氣，心情扣除修正為 30
+            status.mood -= 30;
+            status.affection -= 10;
+            updateUI();
+            
+            yukiImg.style.transform = 'scale(0.92)';
+            setTimeout(() => yukiImg.style.transform = 'scale(1)', 120);
+            createFloatText('💢 惹怒小雪 (心情 -30)', clientX, clientY, '#ff0000');
+            showBubble(quotes.angry[Math.floor(Math.random() * quotes.angry.length)]() + "【提示：持續時間長達3分鐘，期間拒絕吃飯與睡覺！】");
+
+            angryTimer = setTimeout(() => {
+                liftAngerSilently();
+                showBubble("……哼，看在你反省了足足三分鐘的份上，小雪原諒你了。下次絕對不准再弄痛我了喔！");
+            }, 180000);
+        } else {
+            status.mood += 3;
+            status.affection += 1;
+            
+            checkAffectionMilestone(clientX, clientY);
+            updateUI();
+            
+            yukiImg.style.transform = 'scale(1.03)';
+            setTimeout(() => yukiImg.style.transform = 'scale(1)', 100);
+            createFloatText('❤️ 親密度+', clientX, clientY);
+        }
+    }
+    
+    characterArea.addEventListener('click', handleStroke);
+
+    function checkAffectionMilestone(x, y) {
+        if (status.affection >= 100 && !isGameCleared) {
+            status.affection = 100;
+            isAngryLocked = false;
+            isGameCleared = true;
+            status.isGameCleared = true;
+            clearTimeout(angryTimer);
+            updateUI();
+            setTimeout(() => {
+                triggerGoodEndingUI();
+            }, 400);
+        } else {
+            if(Math.random() > 0.4) {
+                let pool = quotes.normal;
+                if (status.fullness <= 30) pool = quotes.hungry; 
+                else if (status.mood >= 85) pool = quotes.happy;
+                else if (status.energy <= 30) pool = quotes.tired;
+                showBubble(pool[Math.floor(Math.random() * pool.length)]());
+            }
+        }
+    }
+
+    function closeEnding() {
+        document.getElementById('ending-overlay').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('ending-overlay').style.display = 'none';
+            document.getElementById('ending-overlay').style.opacity = '1';
+            status.affection = 100;
+            updateUI();
+            showBubble("嘻嘻，從今天起，" + N() + "隨時都可以找小雪撒嬌摸摸哦，小雪一輩子都不會對你生氣了~");
+        }, 500);
+    }
+
+    function liftAngerSilently() {
+        isAngryLocked = false;
+        strokeCount = 0;
+        clearTimeout(angryTimer);
+        updateUI();
+    }
+
+    function apologize() {
+        if (!isAngryLocked || isBadEndingTriggered) return;
+        refreshInteract();
+        
+        if (status.fullness < 20) {
+            showBubble("（肚子空空沒力氣）你現在太餓了，連大聲好好道歉的力氣都沒有……先想辦法填飽肚子吧。");
+            return;
+        }
+
+        status.fullness -= 20;
+        status.mood += 20;
+        liftAngerSilently();
+        showBubble("（看到你誠誠懇懇道歉）……好啦好啦，看到" + N() + "這麼有誠意道歉，小雪就不氣你了！原諒你！");
+    }
+
+    function buyItem(type) {
+        closeAllPanels();
+        refreshInteract();
+        
+        if (isAngryLocked && (type === 'meal' || type === 'snack' || type === 'catnip')) {
+            showBubble("（氣呼呼推開）我不吃！小雪現在還在極度生氣，大壞蛋" + N() + "買再好的東西我都不會吃的！💢");
+            return;
+        }
+
+        if (type === 'meal') {
+            if (status.money < 20) { showBubble("💰 金錢不足！需要 $20 才可以買普及正餐哦。"); return; }
+            if (status.fullness >= 95) { showBubble("好飽呀... 吃不下了呢。"); return; }
+            status.money -= 20;
+            status.fullness += 25;
+            status.energy += 5;
+            showBubble("（高興地動筷子）哇，好豐富！謝謝" + N() + "準備的晚餐，小雪開動囉～");
+            isEatingLocked = true; setTimeout(() => { isEatingLocked = false; updateUI(); }, 2500);
+        } 
+        else if (type === 'snack') {
+            if (status.money < 10) { showBubble("💰 金錢不足！需要 $10 才可以買普及點心。"); return; }
+            status.money -= 10;
+            status.mood += 30;
+            status.fullness += 8;
+            showBubble("這是給小雪的點心嗎？香香甜甜的！謝謝" + N() + "～");
+            isEatingLocked = true; setTimeout(() => { isEatingLocked = false; updateUI(); }, 2500);
+        }
+        else if (type === 'catnip') {
+            if (status.money < 45) { showBubble("💰 金錢不足！需要 $45 才能購買高級貓薄荷。"); return; }
+            status.money -= 45;
+            status.mood += 55;
+            status.energy += 15;
+            showBubble("（眼神失焦）喵嗚～這個是頂級貓薄荷！感覺所有的不開心都融化了～❤");
+            isEatingLocked = true; setTimeout(() => { isEatingLocked = false; updateUI(); }, 2500);
+        }
+        else if (type === 'gift') {
+            if (status.money < 90) { showBubble("💰 金錢不足！需要 $90 才能買下這款亮亮髮飾哦。"); return; }
+            status.money -= 90;
+            status.affection += 15;
+            
+            if (isAngryLocked) {
+                liftAngerSilently();
+                showBubble("（看著閃閃發亮的漂亮髮飾，雙眼放光）哇……好漂亮的髮飾！既然" + N() + "送了這麼珍貴的禮物……那小雪就既往不咎，立刻原諒你啦！🥰");
+            } else {
+                showBubble("（開心地戴在貓耳旁）給我的禮物嗎？好精緻的髮飾呀！小雪戴上去好看嗎？嘿嘿，最喜歡" + N() + "了！✨");
+            }
+            checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+        }
+        updateUI();
+    }
+
+    function sleep() {
+        closeAllPanels();
+        
+        if (isAngryLocked) {
+            showBubble("（使使勁地搖頭）不睡！小雪現在氣都氣飽了，根本睡不著！快來跟我道歉！");
+            return;
+        }
+
+        if (status.energy >= 50 && !isGameCleared) {
+            showBubble(`${N()}，小雪目前體力還有 ${status.energy} 點（大於或等於 50 點），現在還不需要睡覺哦！去玩個小遊戲消耗體力吧。`);
+            return;
+        }
+
+        if (status.energy >= 95 && status.fullness >= 95) {
+            showBubble("小雪現在精神和肚子都飽飽的呢，" + N() + "累的話，小雪在旁邊陪著你吧？");
+            return;
+        }
+        
+        isSleeping = true;
+        bubble.style.transform = 'translateX(-50%) scale(0)';
+        characterArea.style.opacity = '0';
+        actionBar.style.opacity = '0';
+        actionBar.style.pointerEvents = 'none';
+
+        setTimeout(() => {
+            gameContainer.style.backgroundImage = "url('睡覺.jpg')";
+            const overlay = document.getElementById('sleep-overlay');
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+        }, 400);
+        
+        setTimeout(() => {
+            status.energy += 15;
+            status.fullness += 10; 
+            status.mood += 15;
+            status.money += 20;
+            
+            const overlay = document.getElementById('sleep-overlay');
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            gameContainer.style.backgroundImage = "url('背景.jpg')";
+            
+            setTimeout(() => {
+                isSleeping = false;
+                characterArea.style.opacity = '1';
+                actionBar.style.opacity = '1';
+                actionBar.style.pointerEvents = 'auto';
+                refreshInteract();
+                updateUI();
+                showBubble("（揉揉眼睛）唔……醒來之後感覺好多了，體力(+15)和飽食度(+10)都恢復了一些，順便整理房間還找到了 💰$20 元獎勵！");
+            }, 600);
+
+        }, 4000);
+    }
+
+    function showDifficulty(gameType) {
+        if (isStatusTooLow() && !isGameCleared) {
+            if (status.energy <= 15) {
+                showBubble("（虛弱地癱坐）" + N() + "……小雪現在體力太低了，連玩遊戲的力氣都沒有了……請讓我睡覺恢復體力吧。");
+            } else {
+                showBubble("（肚子咕嚕叫）" + N() + "……小雪肚子太餓了，玩不動了……請先去商店買些正餐或點心給我吃。");
+            }
+            return;
+        }
+        currentGameType = gameType;
+        togglePanel('difficulty-panel');
+    }
+
+    function startGame(difficulty) {
+        currentGameDifficulty = difficulty;
+        closeAllPanels();
+        
+        if (isStatusTooLow() && !isGameCleared) {
+            showBubble("嗚...身體沉沉的，沒有精神去幫忙幹活了...");
+            return;
+        }
+
+        if(!isGameCleared) {
+            status.energy -= 10;
+            status.fullness -= 10;
+            updateUI();
+        }
+
+        if (currentGameType === 'laser') {
+            openLaserGame();
+        } else if (currentGameType === 'memory') {
+            openMemoryGame();
+        } else if (currentGameType === 'rps') {
+            openRPSGame();
+        } else if (currentGameType === 'gomoku') {
+            openGomokuGame();
+        }
+    }
+
+    // 抓光點遊戲
+    function openLaserGame() {
+        isInMinigame = true;
+        laserHits = 0;
+        gameTimeLeft = 100;
+        
+        if (currentGameDifficulty === 'easy') {
+            maxLaserHits = 5;
+            clearInterval(laserInterval);
+        } else {
+            maxLaserHits = 12; 
+            clearInterval(laserInterval);
+            laserInterval = setInterval(moveLaser, 500); 
+        }
+        
+        document.getElementById('laser-max').innerText = maxLaserHits;
+        document.getElementById('laser-count').innerText = laserHits;
+        document.getElementById('game-laser').style.display = 'flex';
+        moveLaser();
+
+        clearInterval(gameTimerInterval);
+        gameTimerInterval = setInterval(() => {
+            gameTimeLeft -= (currentGameDifficulty === 'easy' ? 0.8 : 2.5); 
+            document.getElementById('laser-timer-fill').style.width = gameTimeLeft + '%';
+            if (gameTimeLeft <= 0) {
+                closeGame();
+                showBubble("光點實在太快了，房間根本來不及打掃乾淨……");
+            }
+        }, 100);
+    }
+
+    function moveLaser() {
+        const dot = document.getElementById('laser-dot');
+        const zone = document.getElementById('cat-toy-zone');
+        const maxX = zone.clientWidth - 70;
+        const maxY = zone.clientHeight - 70;
+        dot.style.left = Math.max(10, Math.random() * maxX) + 'px';
+        dot.style.top = Math.max(10, Math.random() * maxY) + 'px';
+    }
+
+    function hitLaser(event) {
+        laserHits++;
+        document.getElementById('laser-count').innerText = laserHits;
+        
+        const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+        const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+        createFloatText('✨ 抓到了！', clientX, clientY, '#ff3b6f');
+
+        if (laserHits >= maxLaserHits) {
+            let rewardMoney = currentGameDifficulty === 'easy' ? 20 : 60;
+            status.money += rewardMoney;
+            status.mood += 20;
+            status.affection += 6;
+            
+            closeGame();
+            showBubble(`全部打掃整理好啦！這是清掃做家務獲得的獎勵 💰$${rewardMoney}！`);
+            checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+        } else {
+            if (currentGameDifficulty === 'easy') moveLaser();
+        }
+    }
+
+    // 卡牌記憶
+    function openMemoryGame() {
+        isInMinigame = true;
+        document.getElementById('game-memory').style.display = 'flex';
+        document.getElementById('memory-title').innerText = "卡牌分類：請快速記住所有卡牌位置！";
+        
+        flippedCards = [];
+        matchedPairs = 0;
+        isProcessingCards = true; 
+        
+        const grid = document.getElementById('memory-grid');
+        grid.innerHTML = '';
+
+        let currentIcons = [];
+        if (currentGameDifficulty === 'easy') {
+            requiredPairs = 4;
+            memoTurnsLeft = 10; 
+            memoMaxTime = 40;   
+            grid.style.gridTemplateColumns = 'repeat(4, 110px)';
+            const subList = poolIcons.slice(0, 4);
+            currentIcons = [...subList, ...subList];
+        } else {
+            requiredPairs = 8; 
+            memoTurnsLeft = 10; 
+            memoMaxTime = 20;   
+            grid.style.gridTemplateColumns = 'repeat(4, 100px)';
+            currentIcons = [...poolIcons, ...poolIcons];
+        }
+
+        memoTimeLeft = 100;
+        document.getElementById('memo-turns-txt').innerText = memoTurnsLeft;
+        document.getElementById('memo-time-txt').innerText = memoMaxTime;
+        document.getElementById('memory-timer-fill').style.width = '100%';
+
+        const shuffled = currentIcons.sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach((icon) => {
+            const card = document.createElement('div');
+            card.className = 'card flipped'; 
+            card.style.width = '100px';
+            card.style.height = '100px';
+            card.dataset.icon = icon;
+
+            card.innerHTML = `
+                <div class="card-back">📦</div>
+                <div class="card-front">${icon}</div>
+            `;
+            card.onclick = () => flipCard(card);
+            grid.appendChild(card);
+        });
+
+        setTimeout(() => {
+            if (document.getElementById('game-memory').style.display === 'none') return; 
+            const allCards = document.querySelectorAll('.card');
+            allCards.forEach(c => c.classList.remove('flipped'));
+            document.getElementById('memory-title').innerText = "卡牌分類：將相同的雜物收納歸類！";
+            isProcessingCards = false; 
+
+            clearInterval(gameTimerInterval);
+            const step = 100 / (memoMaxTime * 10);
+            gameTimerInterval = setInterval(() => {
+                memoTimeLeft -= step;
+                document.getElementById('memo-time-txt').innerText = Math.max(0, Math.ceil((memoTimeLeft / 100) * memoMaxTime));
+                document.getElementById('memory-timer-fill').style.width = memoTimeLeft + '%';
+                
+                if (memoTimeLeft <= 0) {
+                    closeGame();
+                    showBubble("分類倒數結束！雜物大塌陷，整理失敗。");
+                }
+            }, 100);
+
+        }, currentGameDifficulty === 'easy' ? 1800 : 1000); 
+    }
+
+    function flipCard(card) {
+        if (isProcessingCards || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+        card.classList.add('flipped');
+        flippedCards.push(card);
+        
+        if (flippedCards.length === 2) {
+            isProcessingCards = true; 
+            memoTurnsLeft--; 
+            document.getElementById('memo-turns-txt').innerText = memoTurnsLeft;
+            setTimeout(checkMatch, 400);
+        }
+    }
+
+    function checkMatch() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.icon === card2.dataset.icon) {
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            matchedPairs++;
+            
+            if (matchedPairs === requiredPairs) {
+                let rewardMoney = currentGameDifficulty === 'easy' ? 25 : 75;
+                status.money += rewardMoney;
+                status.mood += 25;
+                status.affection += 8;
+                
+                setTimeout(() => {
+                    closeGame();
+                    showBubble(`高難度雜物全部完美分類！小雪獲得了酬勞 💰$${rewardMoney}！`);
+                    checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+                }, 500);
+                return;
+            }
+        } else {
+            setTimeout(() => {
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+            }, 150);
+        }
+
+        flippedCards = [];
+        if (memoTurnsLeft <= 0 && matchedPairs < requiredPairs) {
+            setTimeout(() => {
+                closeGame();
+                showBubble("翻閱次數全部用光，大分類整理失敗……");
+            }, 500);
+        } else {
+            setTimeout(() => { isProcessingCards = false; }, 200);
+        }
+    }
+
+    // 猜拳遊戲系統
+    function openRPSGame() {
+        isInMinigame = true;
+        rpsScoreP = 0;
+        rpsScoreY = 0;
+        rpsTarget = currentGameDifficulty === 'easy' ? 2 : 4; 
+        gameTimeLeft = 100;
+
+        document.getElementById('rps-score-p').innerText = rpsScoreP;
+        document.getElementById('rps-score-y').innerText = rpsScoreY;
+        document.getElementById('rps-target').innerText = rpsTarget;
+        document.getElementById('rps-hand-p').innerText = '❓';
+        document.getElementById('rps-hand-y').innerText = '❓';
+        document.getElementById('rps-result-text').innerText = 'VS';
+        document.getElementById('game-rps').style.display = 'flex';
+        document.getElementById('rps-controls').style.pointerEvents = 'auto';
+
+        clearInterval(gameTimerInterval);
+        gameTimerInterval = setInterval(() => {
+            gameTimeLeft -= (currentGameDifficulty === 'easy' ? 1.0 : 4.0); 
+            document.getElementById('rps-timer-fill').style.width = gameTimeLeft + '%';
+            if (gameTimeLeft <= 0) {
+                rpsScoreY++;
+                document.getElementById('rps-score-y').innerText = rpsScoreY;
+                gameTimeLeft = 100;
+                document.getElementById('rps-result-text').innerText = N() + '超時！';
+                checkRPSGameOver();
+            }
+        }, 100);
+    }
+
+    function playRPS(playerHand) {
+        document.getElementById('rps-hand-p').innerText = playerHand;
+        const hands = ['✊', '✌️', '✋'];
+        
+        let yukiHand = hands[Math.floor(Math.random() * 3)];
+        if (currentGameDifficulty === 'hard' && Math.random() < 0.4) {
+            if (playerHand === '✊') yukiHand = '✋';
+            if (playerHand === '✌️') yukiHand = '✊';
+            if (playerHand === '✋') yukiHand = '✌️';
+        }
+        document.getElementById('rps-hand-y').innerText = yukiHand;
+
+        let result = '';
+        if (playerHand === yukiHand) {
+            result = '平手！';
+        } else if (
+            (playerHand === '✊' && yukiHand === '✌️') ||
+            (playerHand === '✌️' && yukiHand === '✋') ||
+            (playerHand === '✋' && yukiHand === '✊')
+        ) {
+            result = N() + '贏！';
+            rpsScoreP++;
+        } else {
+            result = '小雪贏！';
+            rpsScoreY++;
+        }
+
+        document.getElementById('rps-result-text').innerText = result;
+        document.getElementById('rps-score-p').innerText = rpsScoreP;
+        document.getElementById('rps-score-y').innerText = rpsScoreY;
+
+        gameTimeLeft = 100; 
+        document.getElementById('rps-controls').style.pointerEvents = 'none';
+        
+        setTimeout(() => {
+            if (document.getElementById('game-rps').style.display === 'flex') {
+                document.getElementById('rps-controls').style.pointerEvents = 'auto';
+                checkRPSGameOver();
+            }
+        }, 600);
+    }
+
+    function checkRPSGameOver() {
+        if (rpsScoreP >= rpsTarget) {
+            let moneyReward = currentGameDifficulty === 'easy' ? 25 : 65;
+            status.money += moneyReward;
+            status.mood += 20;
+            status.affection += 5;
+            closeGame();
+            showBubble(`恭喜！在猜拳對局中獲得了最終勝利！獲得金錢 $${moneyReward}！`);
+            checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+        } else if (rpsScoreY >= rpsTarget) {
+            closeGame();
+            showBubble("這次是小雪猜拳贏了哦，嘿嘿～" + N() + "再接再厲！");
+        }
+    }
+
+    // 五子棋對戰系統
+    function openGomokuGame() {
+        isInMinigame = true;
+        document.getElementById('game-gomoku').style.display = 'flex';
+        const boardEl = document.getElementById('gomoku-board');
+        boardEl.innerHTML = '';
+        gomokuBoard = Array(boardSize).fill(null).map(() => Array(boardSize).fill(0));
+        gomokuActive = true;
+        document.getElementById('gomoku-title').innerText = '五子棋：' + N() + '執黑先行，達成五子連線！';
+        document.getElementById('gomoku-turn-text').innerText = N() + '的回合 (黑子)';
+        for (let r = 0; r < boardSize; r++) {
+            for (let c = 0; c < boardSize; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'gomoku-cell';
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+                cell.onclick = (e) => playerGomokuMove(r, c);
+                boardEl.appendChild(cell);
+            }
+        }
+    }
+
+    function playerGomokuMove(r, c) {
+        if (!gomokuActive || gomokuBoard[r][c] !== 0) return;
+        
+        placeGomokuPiece(r, c, 1); 
+        if (checkGomokuWin(r, c, 1)) {
+            gomokuActive = false;
+            let moneyReward = currentGameDifficulty === 'easy' ? 35 : 85; 
+            status.money += moneyReward;
+            status.mood += 30;
+            status.affection += 10;
+            setTimeout(() => {
+                closeGame();
+                showBubble(` 🎉 絕殺！${N()}在五子棋對弈中擊敗了小雪，獲得高額津貼 $${moneyReward}！`);
+                checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+            }, 400);
+            return;
+        }
+
+        document.getElementById('gomoku-turn-text').innerText = "小雪思考中...";
+        gomokuActive = false;
+        setTimeout(yukiGomokuMove, currentGameDifficulty === 'easy' ? 600 : 250); 
+    }
+
+    function yukiGomokuMove() {
+        if (!document.getElementById('game-gomoku').style.display === 'flex') return;
+        
+        let targetR = -1;
+        let targetC = -1;
+
+        if (currentGameDifficulty === 'hard') {
+            let bestScore = -1;
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (gomokuBoard[r][c] === 0) {
+                        let score = evaluateGomokuCell(r, c);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            targetR = r;
+                            targetC = c;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (targetR === -1) {
+            let emptyCells = [];
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (gomokuBoard[r][c] === 0) emptyCells.push({r, c});
+                }
+            }
+            if (emptyCells.length > 0) {
+                let choice = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                targetR = choice.r;
+                targetC = choice.col || choice.c;
+            }
+        }
+
+        if (targetR !== -1) {
+            placeGomokuPiece(targetR, targetC, 2); 
+            if (checkGomokuWin(targetR, targetC, 2)) {
+                gomokuActive = false;
+                setTimeout(() => {
+                    closeGame();
+                    showBubble("小雪五子連線！「哼哼～" + N() + "的破綻都被我抓到囉，這局是小雪贏啦！」");
+                }, 400);
+                return;
+            }
+            document.getElementById('gomoku-turn-text').innerText = "" + N() + "的回合 (黑子)";
+            gomokuActive = true;
+        }
+    }
+
+    function placeGomokuPiece(r, c, player) {
+        gomokuBoard[r][c] = player;
+        const cell = document.querySelector(`.gomoku-cell[data-row='${r}'][data-col='${c}']`);
+        if (cell) {
+            const piece = document.createElement('div');
+            piece.className = 'gomoku-piece ' + (player === 1 ? 'black' : 'white');
+            cell.appendChild(piece);
+        }
+    }
+
+    function evaluateGomokuCell(r, c) {
+        let score = 0;
+        const dirs = [[1,0], [0,1], [1,1], [1,-1]];
+        
+        dirs.forEach(([dr, dc]) => {
+            let pCount = 0; 
+            let yCount = 0; 
+            
+            for(let i=1; i<5; i++) {
+                let nr = r + dr*i, nc = c + dc*i;
+                if(nr>=0 && nr<boardSize && nc>=0 && nc<boardSize) {
+                    if(gomokuBoard[nr][nc] === 1) pCount++;
+                    else if(gomokuBoard[nr][nc] === 2) yCount++;
+                    else break;
+                }
+            }
+            for(let i=1; i<5; i++) {
+                let nr = r - dr*i, nc = c - dc*i;
+                if(nr>=0 && nr<boardSize && nc>=0 && nc<boardSize) {
+                    if(gomokuBoard[nr][nc] === 1) pCount++;
+                    else if(gomokuBoard[nr][nc] === 2) yCount++;
+                    else break;
+                }
+            }
+            
+            if (pCount === 4) score += 10000;
+            if (yCount === 4) score += 5000; 
+            if (pCount === 3) score += 1000;
+            if (yCount === 3) score += 500;
+            score += (pCount + yCount);
+        });
+        return score;
+    }
+
+    function checkGomokuWin(r, c, p) {
+        const dirs = [[1,0], [0,1], [1,1], [1,-1]];
+        for (let [dr, dc] of dirs) {
+            let count = 1;
+            let nr = r + dr, nc = c + dc;
+            while(nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && gomokuBoard[nr][nc] === p) {
+                count++; nr += dr; nc += dc;
+            }
+            nr = r - dr; nc = c - dc;
+            while(nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && gomokuBoard[nr][nc] === p) {
+                count++; nr -= dr; nc -= dc;
+            }
+            if (count >= 5) return true;
+        }
+        return false;
+    }
+
+    function closeGame() {
+        clearInterval(laserInterval);
+        clearInterval(gameTimerInterval);
+        document.getElementById('game-laser').style.display = 'none';
+        document.getElementById('game-memory').style.display = 'none';
+        document.getElementById('game-rps').style.display = 'none';
+        document.getElementById('game-gomoku').style.display = 'none';
+        gomokuActive = false;
+        isInMinigame = false;
+        refreshInteract();
+        updateUI();
+    }
+
+    const bondEvents = [
+        {
+            q: "✨【事件】小雪把泡好的熱茶遞給你，輕聲問：『" + N() + "……外面的世界好繁雜，但小雪最喜歡跟" + N() + "待在屋裡。對" + N() + "來說，“家”和“小雪的存在”，到底意味著什麼呢？』",
+            a: "A. 這裡是共同的避風港。有小雪在，這裡才算是一個溫暖的「家」。",
+            b: "B. 只是下班睡覺的地方。妳平時吃我的住我的，別問深奧的問題。",
+            c: "C. 嗯……只要每天能平平安安地一起生活，這樣不就足夠了嗎？"
+        },
+        {
+            q: "✨【內心話】小雪坐在小凳子上，看著你疲憊的背影低聲說：『" + N() + "，有時候看著你那麼辛苦，小雪會想……如果我不是貓耳少女，而是一個普通的人類，是不是就能出門幫你分擔更多辛苦了呢？』",
+            a: "A. 傻孩子，妳現在這樣就幫了我很大的忙，是我不可或缺的依靠。",
+            b: "B. 的確，如果能幫忙賺錢貼補家用就好了，現在這樣開銷挺大的。",
+            c: "C. 別胡思亂想了，不管是普通人還是現在這樣，生活都差不多啦。"
+        }
+    ];
+
+    let currentEventIdx = 0;
+    function triggerAffectionEvent() {
+        if ((isStatusTooLow() || isBadEndingTriggered) && !isGameCleared) return;
+
+        lastEventTime = Date.now();
+        const overlay = document.getElementById('choice-overlay');
+        const qText = document.getElementById('choice-question');
+        
+        currentEventIdx = Math.floor(Math.random() * bondEvents.length);
+        const ev = bondEvents[currentEventIdx];
+
+        qText.innerText = ev.q;
+        document.getElementById('opt-a').innerText = ev.a;
+        document.getElementById('opt-b').innerText = ev.b;
+        document.getElementById('opt-c').innerText = ev.c;
+
+        overlay.style.display = 'flex';
+    }
+
+    function makeChoice(idx) {
+        document.getElementById('choice-overlay').style.display = 'none';
+        refreshInteract();
+
+        if (idx === 1) {
+            status.affection += 15;
+            status.mood += 15;
+            if(currentEventIdx === 0) {
+                showBubble("（眼眶紅紅地微笑）嗯！小雪也會努力守護這個避風港的，我們會一直是一家人！");
+            } else {
+                showBubble("（鬆了一開口氣，抱緊抹布）聽你這麼說，小雪心裡暖洋洋的……最喜歡" + N() + "了。");
+            }
+            isEatingLocked = true; setTimeout(() => { isEatingLocked = false; updateUI(); }, 3000);
+            checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+        } else if (idx === 2) {
+            status.affection -= 40;
+            status.mood -= 40;
+            if(currentEventIdx === 0) {
+                showBubble("（受傷地倒退一步，眼淚掉下來）……原來在" + N() + "眼裡，小雪只是個累贅嗎？對不起……");
+            } else {
+                showBubble("（低著頭，眼淚一滴滴落到地板上）對不起……是小雪太沒用了，造成" + N() + "的負擔……");
+            }
+            isAngryLocked = true; 
+            setTimeout(() => { isAngryLocked = false; updateUI(); }, 6000);
+        } else {
+            status.mood += 5;
+            status.affection += 2;
+            showBubble("（點了點頭）嗯，平淡、安全的日常生活，就是最珍貴的幸福了。");
+            checkAffectionMilestone(window.innerWidth/2, window.innerHeight/2);
+        }
+        updateUI();
+    }
+
+    // 核心狀態常駐計時器 (每 2 秒執行一次底層循環)
+    setInterval(() => {
+        // 如果處於睡覺、已通關或特殊結局被觸發狀態，全面暫停屬性扣減
+        if (isSleeping || isGameCleared || isBadEndingTriggered) return;
+
+        // 心情維持正常微降
+        status.mood -= 0.24; 
+        
+        // 飽食度每 30 秒減少 2 (30秒即是每執行 15 次觸發一次扣除)
+        fullnessTickCounter++;
+        if (fullnessTickCounter >= 15) {
+            status.fullness -= 2;
+            fullnessTickCounter = 0; 
+        }
+
+        const now = Date.now();
+        
+        // 虛弱冷落狀態哀求檢測
+        if (isStatusTooLow()) {
+            if (Math.random() > 0.1) {
+                if (status.energy <= 15) {
+                    showBubble(quotes.tired[Math.floor(Math.random() * quotes.tired.length)]());
+                } else {
+                    showBubble(quotes.starving[Math.floor(Math.random() * quotes.starving.length)]());
+                }
+            }
+        }
+
+        // 冷落扣心情：每分鐘扣 25（每 30 次 × 2 秒 = 60 秒），小遊戲進行中暫停
+        if (!isInMinigame && now - lastInteractTime > 35000 && !isAngryLocked && !isEatingLocked && !isStatusTooLow()) {
+            neglectTickCounter++;
+            if (neglectTickCounter >= 30) {
+                neglectTickCounter = 0;
+                status.mood -= 25;
+                showBubble(quotes.sad[Math.floor(Math.random() * quotes.sad.length)]() + "【⚠️ 冷落警告：心情衰退 -25 點！】");
+            }
+        } else if (isInMinigame || now - lastInteractTime <= 35000) {
+            neglectTickCounter = 0;
+        }
+
+        updateUI(); 
+    }, 2000);
+
+    window.onload = () => {
+        loadGameData();
+        resizeGame();
+        // 初始化UI並執行首輪結局偵測
+        if (!checkAndTriggerBadEndings() && isGameCleared) {
+            triggerGoodEndingUI();
+        } else {
+            updateUI();
+        }
+    };
+</script>
+
+</body>
+</html>
